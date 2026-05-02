@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Migrate Google Photos from Takeout ZIPs in Google Drive"
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
+packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -12,6 +13,14 @@ google-auth-oauthlib = "^1.2.0"
 requests = "^2.31.0"
 click = "^8.1.7"
 remotezip = "^0.12.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.1.1"
+pytest-cov = "^5.0.0"
+pytest-mock = "^3.14.0"
+
+[tool.poetry.scripts]
+gphoto-migrate = "src.cli:main"
 
 [build-system]
 requires = ["poetry-core"]

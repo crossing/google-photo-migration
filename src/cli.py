@@ -1,11 +1,11 @@
 import logging
 import click
 import os
-from src.auth import get_credentials
-from src.drive_manager import DriveManager
-from src.photos_manager import PhotosManager
+from src.auth.google_auth import get_credentials
+from src.sources.google_drive import DriveManager
+from src.sinks.google_photos import PhotosManager
 from src.processor import MigrationProcessor
-from src.state_db import MigrationStateDB
+from src.state.sqlite_state import MigrationStateDB
 
 logging.basicConfig(
     level=logging.INFO,

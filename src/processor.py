@@ -2,9 +2,9 @@ import io
 import logging
 import os
 from remotezip import PartialBuffer, RemoteZip
-from .drive_manager import DriveManager
-from .photos_manager import PhotosManager
-from .state_db import MigrationStateDB
+from .sources.google_drive import DriveManager
+from .sinks.google_photos import PhotosManager
+from .state.sqlite_state import MigrationStateDB
 
 logger = logging.getLogger(__name__)
 
