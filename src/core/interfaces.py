@@ -1,70 +1,68 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional, Iterator, BinaryIO
+from typing import Any, BinaryIO
+
 
 class Source(ABC):
     @abstractmethod
-    def list_folders(self) -> List[Dict[str, Any]]:
+    def list_folders(self) -> list[dict[str, Any]]:
         """List available folders/containers in the source."""
         pass
 
     @abstractmethod
-    def list_items(self, folder_id: str) -> List[Dict[str, Any]]:
+    def list_items(self, folder_id: str) -> list[dict[str, Any]]:
         """List items in a specific folder."""
         pass
 
     @abstractmethod
-    def get_item_stream(self, item_id: str, start_byte: int, end_byte: int) -> bytes:
-        """Get a byte range of an item."""
+    def get_item_stream(
+        self,
+        item_id: str,
+        start: int | None = None,
+        end: int | None = None
+    ) -> bytes:
+        """Get a stream for a specific item, optionally with a byte range."""
         pass
 
     @abstractmethod
-    def get_item_size(self, item_id: str) -> int:
-        """Get the total size of an item in bytes."""
+    def get_file_size(self, file_id: str) -> int:
+        """Get the total size of a file."""
         pass
+
 
 class Sink(ABC):
     @abstractmethod
-    def upload_item(self, file_bytes: bytes, filename: str) -> str:
-        """Upload raw bytes and return an upload token/id."""
+    def upload_item(self, filename: str, content: BinaryIO) -> str:
+        """Upload an item and return an upload token."""
         pass
 
     @abstractmethod
-    def batch_create(self, upload_tokens: List[str]) -> Dict[str, Any]:
+    def batch_create(self, upload_tokens: list[str]) -> dict[str, Any]:
         """Finalize a batch of uploads."""
         pass
 
+
 class StateStore(ABC):
     @abstractmethod
-    def is_indexed(self, container_id: str) -> bool:
-        """Check if a container (e.g. ZIP) has been indexed."""
-        pass
-
-    @abstractmethod
-    def mark_indexed(self, container_id: str, container_name: str):
-        """Mark a container as indexed."""
-        pass
-
-    @abstractmethod
-    def add_items(self, items: List[tuple]):
+    def add_items(self, items: list[tuple[str, str, str]]) -> None:
         """Add media items to the store for tracking."""
         pass
 
     @abstractmethod
-    def get_pending_items(self, container_id: str) -> List[tuple]:
+    def get_pending_items(self, container_id: str) -> list[tuple[int, str]]:
         """Get items that haven't been successfully processed yet."""
         pass
 
     @abstractmethod
-    def mark_uploaded(self, item_id: Any, upload_token: str):
-        """Mark an item as uploaded to the sink."""
+    def mark_completed(self, item_id: int, upload_token: str) -> None:
+        """Mark an item as successfully processed."""
         pass
 
     @abstractmethod
-    def mark_completed(self, upload_token: str):
-        """Mark an item as fully created in the sink."""
+    def mark_failed(self, item_id: int, error_message: str) -> None:
+        """Mark an item as failed."""
         pass
 
     @abstractmethod
-    def get_uploaded_tokens(self) -> List[str]:
+    def get_uploaded_tokens(self) -> list[str]:
         """Get tokens for items that are uploaded but not yet completed."""
         pass

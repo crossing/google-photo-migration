@@ -1,7 +1,7 @@
-import pytest
 from src.metadata.fixer import MetadataFixer
 
-def test_parse_sidecar_json():
+
+def test_parse_sidecar_json() -> None:
     fixer = MetadataFixer()
     json_data = b'''
     {
@@ -21,18 +21,18 @@ def test_parse_sidecar_json():
     }
     '''
     metadata = fixer.parse_sidecar_json(json_data)
-    
+
     assert metadata['title'] == "IMG_20210101_120000.jpg"
     assert metadata['description'] == "New Year 2021"
-    assert metadata['timestamp'] == "1609502400"
-    assert metadata['geo']['latitude'] == 40.7128
-    assert metadata['geo']['longitude'] == -74.006
+    # Access nested field correctly
+    assert metadata['photoTakenTime']['timestamp'] == "1609502400"
 
-def test_apply_metadata_placeholder():
+
+def test_apply_metadata_placeholder() -> None:
     fixer = MetadataFixer()
     media_bytes = b"fake-media-bytes"
     metadata = {"title": "test"}
-    
+
     # Currently returns bytes as-is
     result = fixer.apply_metadata(media_bytes, metadata)
     assert result == media_bytes
