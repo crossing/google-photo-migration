@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "google-photo-migration"
+version = "0.1.0"
+description = "Migrate Google Photos from Takeout ZIPs in Google Drive"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+google-api-python-client = "^2.124.0"
+google-auth-oauthlib = "^1.2.0"
+requests = "^2.31.0"
+click = "^8.1.7"
+remotezip = "^0.12.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
