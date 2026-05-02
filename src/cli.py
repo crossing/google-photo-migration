@@ -1,7 +1,7 @@
 import logging
 import click
 import os
-from src.auth.google_auth import get_credentials
+from src.auth.google_auth import get_credentials, DRIVE_SCOPES, PHOTOS_SCOPES
 from src.sources.google_drive import DriveManager
 from src.sinks.google_photos import PhotosManager
 from src.processor import MigrationProcessor
@@ -15,21 +15,31 @@ logging.basicConfig(
 
 
 @click.command()
-@click.option('--client-secrets', default='client_secrets.json', help='Path to client_secrets.json')
-@click.option('--token-path', default='token.json', help='Path to store OAuth token')
+@click.option('--source-secrets', default='client_secrets.json', help='Path to source client_secrets.json')
+@click.option('--sink-secrets', default='client_secrets.json', help='Path to sink client_secrets.json')
+@click.option('--source-token', default='token_drive.json', help='Path to store source OAuth token')
+@click.option('--sink-token', default='token_photos.json', help='Path to store sink OAuth token')
 @click.option('--db-path', default='migration_state.db', help='Path to SQLite state database')
 @click.option('--folder', default=None, help='Name of the folder in Google Drive containing Takeout ZIPs')
-def main(client_secrets, token_path, db_path, folder):
+def main(source_secrets, sink_secrets, source_token, sink_token, db_path, folder):
     """Google Photos Migration Tool (Takeout to Drive to Photos)"""
 
-    if not os.path.exists(client_secrets):
-        click.echo(f"Error: {client_secrets} not found. Please create OAuth 2.0 credentials in Google Cloud Console.")
+    if not os.path.exists(source_secrets):
+        click.echo(f"Error: Source secrets {source_secrets} not found.")
+        return
+    
+    if not os.path.exists(sink_secrets):
+        click.echo(f"Error: Sink secrets {sink_secrets} not found.")
         return
 
-    creds = get_credentials(token_path, client_secrets)
+    click.echo("Authenticating Source (Google Drive)...")
+    source_creds = get_credentials(source_token, source_secrets, DRIVE_SCOPES)
+    
+    click.echo("Authenticating Sink (Google Photos)...")
+    sink_creds = get_credentials(sink_token, sink_secrets, PHOTOS_SCOPES)
 
-    drive_mgr = DriveManager(creds)
-    photos_mgr = PhotosManager(creds)
+    drive_mgr = DriveManager(source_creds)
+    photos_mgr = PhotosManager(sink_creds)
     state_db = MigrationStateDB(db_path)
     processor = MigrationProcessor(drive_mgr, photos_mgr, state_db)
 
