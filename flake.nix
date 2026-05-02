@@ -2,50 +2,36 @@
   description = "Google Photos Migration Tool";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
     flake-utils.url = "github:numtide/flake-utils";
+    poetry2nix = {
+      url = "github:nix-community/poetry2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils, poetry2nix }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
-        python = pkgs.python3.withPackages (ps: with ps; [
-          google-api-python-client
-          google-auth-oauthlib
-          requests
-          click
-          remotezip
-          pytest
-          pytest-mock
-          pytest-cov
-        ]);
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ poetry2nix.overlays.default ];
+        };
+        p2n = pkgs.poetry2nix;
       in
       {
-        devShells.default = pkgs.mkShell {
-          packages = [
-            python
-            pkgs.poetry
-          ];
-          shellHook = ''
-            export PYTHONPATH=$PYTHONPATH:$(pwd)
-            echo "Google Data Migration Suite dev environment loaded with all dependencies (via Nixpkgs)."
-          '';
+        packages.default = p2n.mkPoetryApplication {
+          projectDir = ./.;
+          preferWheels = true;
         };
 
-        packages.default = pkgs.python3.pkgs.buildPythonApplication {
-          pname = "gphoto-migrate";
-          version = "0.1.0";
-          src = ./.;
-          format = "pyproject";
-          nativeBuildInputs = [ pkgs.python3Packages.poetry-core ];
-          propagatedBuildInputs = with pkgs.python3Packages; [
-            google-api-python-client
-            google-auth-oauthlib
-            requests
-            click
-            remotezip
-            setuptools
+        devShells.default = pkgs.mkShell {
+          packages = [
+            (p2n.mkPoetryEnv {
+              projectDir = ./.;
+              preferWheels = true;
+            })
+            pkgs.poetry
           ];
         };
       });
