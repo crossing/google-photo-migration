@@ -4,14 +4,17 @@ Migrate Google Photos from Takeout ZIPs in Google Drive.
 
 ## Development
 
+This project uses [Nix](https://nixos.org/) with [uv2nix](https://github.com/pyproject-nix/uv2nix) for development.
+
 ```bash
 nix develop
-poetry install
-poetry run gphoto-migrate
+# Your environment is now ready with all dependencies
+gphoto-migrate --help
 ```
 
 ## Testing
 
+Inside the `nix develop` shell:
 ```bash
-poetry run pytest
+pytest
 ```
