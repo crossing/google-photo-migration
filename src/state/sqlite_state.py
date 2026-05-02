@@ -1,6 +1,8 @@
 import sqlite3
+from src.core.interfaces import StateStore
+from typing import List, Any
 
-class MigrationStateDB:
+class MigrationStateDB(StateStore):
     def __init__(self, db_path='migration_state.db'):
         self.db_path = db_path
         self._init_db()
@@ -27,20 +29,20 @@ class MigrationStateDB:
             ''')
             conn.commit()
 
-    def mark_zip_indexed(self, zip_id, zip_filename):
+    def is_indexed(self, container_id: str) -> bool:
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute('SELECT 1 FROM indexed_zips WHERE zip_id = ?', (container_id,))
+            return cursor.fetchone() is not None
+
+    def mark_indexed(self, container_id: str, container_name: str):
         with sqlite3.connect(self.db_path) as conn:
             conn.execute('''
                 INSERT OR REPLACE INTO indexed_zips (zip_id, zip_filename)
                 VALUES (?, ?)
-            ''', (zip_id, zip_filename))
+            ''', (container_id, container_name))
             conn.commit()
 
-    def is_zip_indexed(self, zip_id):
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute('SELECT 1 FROM indexed_zips WHERE zip_id = ?', (zip_id,))
-            return cursor.fetchone() is not None
-
-    def add_media_items_batch(self, items):
+    def add_items(self, items: List[tuple]):
         """Bulk insert items - list of (zip_id, zip_filename, file_path) tuples."""
         if not items:
             return
@@ -51,36 +53,45 @@ class MigrationStateDB:
             ''', items)
             conn.commit()
 
-    def get_pending_items(self, zip_id):
+    def get_pending_items(self, container_id: str) -> List[tuple]:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute('''
                 SELECT id, file_path FROM media_items 
                 WHERE zip_id = ? AND status = 'pending'
-            ''', (zip_id,))
+            ''', (container_id,))
             return cursor.fetchall()
 
-    def update_media_status(self, item_id, status, upload_token=None):
-        with sqlite3.connect(self.db_path) as conn:
-            if upload_token:
-                conn.execute('''
-                    UPDATE media_items SET status = ?, upload_token = ? WHERE id = ?
-                ''', (status, upload_token, item_id))
-            else:
-                conn.execute('''
-                    UPDATE media_items SET status = ? WHERE id = ?
-                ''', (status, item_id))
-
-    def mark_uploaded(self, item_id, upload_token):
+    def mark_uploaded(self, item_id: Any, upload_token: str):
         with sqlite3.connect(self.db_path) as conn:
             conn.execute('''
                 UPDATE media_items SET status = 'uploaded', upload_token = ? WHERE id = ?
             ''', (upload_token, item_id))
 
-    def mark_created(self, upload_token):
+    def mark_completed(self, upload_token: str):
         with sqlite3.connect(self.db_path) as conn:
             conn.execute('''
                 UPDATE media_items SET status = 'created' WHERE upload_token = ?
             ''', (upload_token,))
+
+    def get_uploaded_tokens(self) -> List[str]:
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute('''
+                SELECT upload_token FROM media_items WHERE status = 'uploaded'
+            ''')
+            return [row[0] for row in cursor.fetchall()]
+
+    # Compatibility aliases
+    def is_zip_indexed(self, zip_id):
+        return self.is_indexed(zip_id)
+
+    def mark_zip_indexed(self, zip_id, zip_filename):
+        return self.mark_indexed(zip_id, zip_filename)
+
+    def add_media_items_batch(self, items):
+        return self.add_items(items)
+
+    def mark_created(self, upload_token):
+        return self.mark_completed(upload_token)
 
     def get_stats(self, zip_id):
         with sqlite3.connect(self.db_path) as conn:
@@ -88,10 +99,3 @@ class MigrationStateDB:
                 SELECT status, COUNT(*) FROM media_items WHERE zip_id = ? GROUP BY status
             ''', (zip_id,))
             return dict(cursor.fetchall())
-
-    def get_uploaded_tokens(self):
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute('''
-                SELECT upload_token FROM media_items WHERE status = 'uploaded'
-            ''')
-            return [row[0] for row in cursor.fetchall()]

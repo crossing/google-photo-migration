@@ -2,6 +2,8 @@ import os
 import re
 import requests
 from googleapiclient.discovery import build
+from src.core.interfaces import Sink
+from typing import List, Dict, Any
 
 
 def sanitize_filename(filename):
@@ -10,12 +12,12 @@ def sanitize_filename(filename):
     return safe_name + ext
 
 
-class PhotosManager:
+class PhotosManager(Sink):
     def __init__(self, creds):
         self.creds = creds
         self.service = build('photoslibrary', 'v1', credentials=creds, static_discovery=False)
 
-    def upload_media_item(self, file_bytes, filename):
+    def upload_item(self, file_bytes: bytes, filename: str) -> str:
         """Uploads raw bytes to Google Photos and returns an upload token."""
         safe_filename = sanitize_filename(filename)
         upload_url = 'https://photoslibrary.googleapis.com/v1/uploads'
@@ -31,7 +33,7 @@ class PhotosManager:
         else:
             raise Exception(f"Failed to upload {filename}: {response.status_code} {response.text}")
 
-    def batch_create_media_items(self, upload_tokens):
+    def batch_create(self, upload_tokens: List[str]) -> Dict[str, Any]:
         """Finalizes the upload process by creating media items in the library."""
         new_media_items = [
             {"simpleMediaItem": {"uploadToken": token}}
@@ -39,3 +41,10 @@ class PhotosManager:
         ]
         body = {"newMediaItems": new_media_items}
         return self.service.mediaItems().batchCreate(body=body).execute()
+
+    # Keep compatibility aliases
+    def upload_media_item(self, file_bytes, filename):
+        return self.upload_item(file_bytes, filename)
+
+    def batch_create_media_items(self, upload_tokens):
+        return self.batch_create(upload_tokens)
