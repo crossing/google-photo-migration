@@ -34,10 +34,11 @@
         };
 
         packages.default = pkgs.python3.pkgs.buildPythonApplication {
-          pname = "google-photo-migration";
+          pname = "gphoto-migrate";
           version = "0.1.0";
           src = ./.;
           format = "pyproject";
+          nativeBuildInputs = [ pkgs.python3Packages.poetry-core ];
           propagatedBuildInputs = with pkgs.python3Packages; [
             google-api-python-client
             google-auth-oauthlib
