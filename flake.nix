@@ -2,7 +2,7 @@
   description = "Google Photos Migration Tool";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -10,17 +10,42 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        python = pkgs.python3.withPackages (ps: with ps; [
+          google-api-python-client
+          google-auth-oauthlib
+          requests
+          click
+          remotezip
+          pytest
+          pytest-mock
+          pytest-cov
+        ]);
       in
       {
         devShells.default = pkgs.mkShell {
           packages = [
-            pkgs.python3
+            python
             pkgs.poetry
           ];
           shellHook = ''
-            echo "Google Data Migration Suite dev environment"
-            echo "Run 'poetry install' to set up dependencies if not already done."
+            export PYTHONPATH=$PYTHONPATH:$(pwd)
+            echo "Google Data Migration Suite dev environment loaded with all dependencies (via Nixpkgs)."
           '';
+        };
+
+        packages.default = pkgs.python3.pkgs.buildPythonApplication {
+          pname = "google-photo-migration";
+          version = "0.1.0";
+          src = ./.;
+          format = "pyproject";
+          propagatedBuildInputs = with pkgs.python3Packages; [
+            google-api-python-client
+            google-auth-oauthlib
+            requests
+            click
+            remotezip
+            setuptools
+          ];
         };
       });
 }
