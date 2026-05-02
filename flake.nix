@@ -17,6 +17,10 @@
             pkgs.python3
             pkgs.poetry
           ];
+          shellHook = ''
+            echo "Google Data Migration Suite dev environment"
+            echo "Run 'poetry install' to set up dependencies if not already done."
+          '';
         };
       });
 }
