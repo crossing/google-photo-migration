@@ -3,6 +3,7 @@ import re
 from typing import Any, BinaryIO
 
 import requests
+from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
 from src.core.interfaces import Sink
@@ -16,6 +17,10 @@ class PhotosManager(Sink):
 
     def upload_item(self, filename: str, content: BinaryIO) -> str:
         """Uploads a media item to Google Photos and returns an upload token."""
+        # Ensure credentials are valid before attempt
+        if not self.creds.valid:
+            self.creds.refresh(Request())
+
         upload_url = 'https://photoslibrary.googleapis.com/v1/uploads'
         headers = {
             'Authorization': f'Bearer {self.creds.token}',
@@ -25,6 +30,14 @@ class PhotosManager(Sink):
         }
 
         response = requests.post(upload_url, data=content, headers=headers, timeout=60)
+
+        # If unauthorized, try refreshing once
+        if response.status_code == 401:
+            self.creds.refresh(Request())
+            headers['Authorization'] = f'Bearer {self.creds.token}'
+            content.seek(0)  # Reset stream for retry
+            response = requests.post(upload_url, data=content, headers=headers, timeout=60)
+
         if response.status_code == 200:
             return response.text
         else:

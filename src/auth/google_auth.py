@@ -20,7 +20,14 @@ def get_credentials(token_path: str, client_secrets_path: str, scopes: list[str]
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+            try:
+                creds.refresh(Request())
+            except Exception:
+                # If refresh fails (e.g. revoked), trigger full flow
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    client_secrets_path, scopes
+                )
+                creds = flow.run_local_server(port=0, open_browser=True)
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
                 client_secrets_path, scopes
