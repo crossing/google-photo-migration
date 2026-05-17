@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from exiftool import ExifToolHelper
@@ -45,7 +45,7 @@ class MetadataFixer:
             if "photoTakenTime" in metadata:
                 try:
                     ts = int(metadata["photoTakenTime"]["timestamp"])
-                    dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+                    dt = datetime.fromtimestamp(ts, tz=UTC)
                     # Exif format: YYYY:MM:DD HH:MM:SS
                     formatted_date = dt.strftime("%Y:%m:%d %H:%M:%S")
                     tags["DateTimeOriginal"] = formatted_date

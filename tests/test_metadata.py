@@ -47,7 +47,7 @@ def test_apply_metadata_best_effort_on_error() -> None:
 @patch("os.path.exists")
 def test_apply_metadata_calls_exiftool(
     mock_exists: MagicMock,
-    mock_unlink: MagicMock,
+    _mock_unlink: MagicMock,
     mock_open: MagicMock,
     mock_et_class: MagicMock
 ) -> None:
@@ -62,9 +62,9 @@ def test_apply_metadata_calls_exiftool(
     # Setup mocks
     mock_et = mock_et_class.return_value.__enter__.return_value
     mock_exists.return_value = True
-    
+
     # Mock open to return "modified-bytes" when reading back
-    # Note: open is called for writing original bytes too, so we need to handle that if we want to be precise.
+    # Note: open is called for writing original bytes too, so we need to handle that.
     # But for a simple test, we can just check if it returns what we expect.
     mock_open.return_value.__enter__.return_value.read.return_value = b"modified-bytes"
 
@@ -72,7 +72,7 @@ def test_apply_metadata_calls_exiftool(
 
     assert result == b"modified-bytes"
     mock_et.set_tags.assert_called_once()
-    
+
     _, kwargs = mock_et.set_tags.call_args
     tags = kwargs["tags"]
     assert tags["DateTimeOriginal"] == "2021:01:01 12:00:00"  # UTC 1609502400

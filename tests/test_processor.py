@@ -16,7 +16,7 @@ def test_migration_processor_init() -> None:
     assert processor.state == state
 
 
-@patch('src.processor.RemoteZip')
+@patch('src.processor.remotezip.RemoteZip')
 def test_process_zip_file_already_indexed(_mock_remote_zip: Any) -> None:
     source = MagicMock(spec=Source)
     sink = MagicMock(spec=Sink)

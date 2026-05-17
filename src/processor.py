@@ -1,10 +1,8 @@
 import io
 import logging
-import zipfile
 from typing import Any
 
 import remotezip
-from remotezip import OutOfBound, RemoteIO
 
 from src.core.interfaces import Sink, Source, StateStore
 from src.metadata.fixer import MetadataFixer
@@ -26,7 +24,7 @@ class MigrationProcessor:
         file_size = self.source.get_file_size(zip_id)
         logger.info("  ZIP file size: %s bytes", file_size)
 
-        def fetch_logic(data_range: tuple[int, int | None], stream: bool = False) -> Any:
+        def fetch_logic(data_range: tuple[int, int | None], _stream: bool = False) -> Any:
             start, end = data_range
             if start < 0:
                 start = file_size + start
@@ -37,12 +35,15 @@ class MigrationProcessor:
             logger.info("  [FETCH] Requesting %s bytes (%s to %s)...", chunk_size, start, end)
             data = self.source.get_item_stream(zip_id, start, end)
             logger.info("  [FETCH] Received %s bytes", len(data))
-            
+
             # Use remotezip's own PartialBuffer implementation for maximum compatibility
             # It expects (buffer, offset, size, stream)
             return remotezip.PartialBuffer(io.BytesIO(data), start, len(data), False)
 
         class CustomFetcher:
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
+                pass
+
             def fetch(self, data_range: Any, stream: bool = False) -> Any:
                 return fetch_logic(data_range, stream)
 
@@ -50,8 +51,8 @@ class MigrationProcessor:
             # Pass our CustomFetcher class to RemoteZip
             # We use a larger initial buffer for 39GB+ files to help with indexing
             with remotezip.RemoteZip(
-                zip_id, 
-                fetcher=lambda *a, **k: CustomFetcher(), 
+                zip_id,
+                fetcher=CustomFetcher,  # pyright: ignore[reportArgumentType]
                 initial_buffer_size=10*1024*1024
             ) as rzip:
                 all_files = rzip.namelist()

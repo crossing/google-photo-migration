@@ -106,6 +106,7 @@
             installPhase = ''
               mkdir -p $out
               cp -r ${app}/* $out/
+              chmod -R +w $out
               wrapProgram $out/bin/gphoto-migrate \
                 --prefix PATH : ${lib.makeBinPath [ pkgs.exiftool ]} \
                 --set GPHOTO_EXIFTOOL_BIN ${pkgs.exiftool}/bin/exiftool
