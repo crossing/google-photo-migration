@@ -2,6 +2,7 @@ import logging
 import os
 
 import click
+import platformdirs
 
 from src.auth.google_auth import DRIVE_SCOPES, PHOTOS_SCOPES, get_credentials
 from src.processor import MigrationProcessor
@@ -15,13 +16,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+DEFAULT_DB_PATH = os.path.join(
+    platformdirs.user_data_dir("google-photo-migration"),
+    "migration_state.db"
+)
+
 
 @click.command()
 @click.option('--source-secrets', default='client_secrets.json', help='Path to source secrets')
 @click.option('--sink-secrets', default='client_secrets.json', help='Path to sink secrets')
 @click.option('--source-token', default='token_drive.json', help='Path to source OAuth token')
 @click.option('--sink-token', default='token_photos.json', help='Path to sink OAuth token')
-@click.option('--db-path', default='migration_state.db', help='Path to SQLite state database')
+@click.option('--db-path', default=DEFAULT_DB_PATH, help='Path to SQLite state database')
 @click.option('--folder', default=None, help='Folder in Google Drive containing Takeout ZIPs')
 def main(
     source_secrets: str,
@@ -32,6 +38,12 @@ def main(
     folder: str | None
 ) -> None:
     """Google Photos Migration Tool (Takeout to Drive to Photos)"""
+    # Ensure the directory exists for the database
+    db_dir = os.path.dirname(os.path.abspath(db_path))
+    if not os.path.exists(db_dir):
+        logger.info("Creating database directory: %s", db_dir)
+        os.makedirs(db_dir, exist_ok=True)
+
     if not os.path.exists(source_secrets):
         click.echo(f"Error: Source secrets {source_secrets} not found.")
         return

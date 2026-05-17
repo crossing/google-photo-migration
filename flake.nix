@@ -77,6 +77,8 @@
             nativeBuildInputs = [ 
               checkEnv
               pkgs.pyright
+              pkgs.exiftool
+              pkgs.makeWrapper
             ];
 
             buildPhase = ''
@@ -104,6 +106,9 @@
             installPhase = ''
               mkdir -p $out
               cp -r ${app}/* $out/
+              wrapProgram $out/bin/gphoto-migrate \
+                --prefix PATH : ${lib.makeBinPath [ pkgs.exiftool ]} \
+                --set GPHOTO_EXIFTOOL_BIN ${pkgs.exiftool}/bin/exiftool
             '';
 
             meta = {
@@ -134,6 +139,7 @@
               virtualenv
               pkgs.uv
               pkgs.pyright
+              pkgs.exiftool
             ];
             env = {
               UV_NO_SYNC = "1";

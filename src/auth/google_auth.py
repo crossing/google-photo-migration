@@ -6,7 +6,10 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
 DRIVE_SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
-PHOTOS_SCOPES = ['https://www.googleapis.com/auth/photoslibrary']
+PHOTOS_SCOPES = [
+    'https://www.googleapis.com/auth/photoslibrary',
+    'https://www.googleapis.com/auth/photoslibrary.appendonly'
+]
 
 
 def get_credentials(token_path: str, client_secrets_path: str, scopes: list[str]) -> Any:
@@ -22,7 +25,7 @@ def get_credentials(token_path: str, client_secrets_path: str, scopes: list[str]
             flow = InstalledAppFlow.from_client_secrets_file(
                 client_secrets_path, scopes
             )
-            creds = flow.run_local_server(port=0, open_browser=False)
+            creds = flow.run_local_server(port=0, open_browser=True)
 
         with open(token_path, 'w') as token:
             token.write(creds.to_json())
